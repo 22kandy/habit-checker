@@ -15,14 +15,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const date = searchParams.get('date') || getTodayDateString();
+    const date = searchParams.get('date');
     const habitId = searchParams.get('habit_id');
 
     let query = supabase
       .from('habit_completions')
       .select('*')
-      .eq('user_id', user.id)
-      .eq('completion_date', date);
+      .eq('user_id', user.id);
+
+    // Only filter by date if explicitly provided
+    // If no date is provided, return all completions (for streak calculation)
+    if (date) {
+      query = query.eq('completion_date', date);
+    }
 
     if (habitId) {
       query = query.eq('habit_id', habitId);
