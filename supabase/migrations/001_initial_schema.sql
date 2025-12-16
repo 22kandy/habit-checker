@@ -26,6 +26,12 @@ CREATE INDEX IF NOT EXISTS idx_habits_user_id ON habits(user_id);
 ALTER TABLE habits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE habit_completions ENABLE ROW LEVEL SECURITY;
 
+-- Drop existing policies if they exist (for habits table)
+DROP POLICY IF EXISTS "Users can view their own habits" ON habits;
+DROP POLICY IF EXISTS "Users can insert their own habits" ON habits;
+DROP POLICY IF EXISTS "Users can update their own habits" ON habits;
+DROP POLICY IF EXISTS "Users can delete their own habits" ON habits;
+
 -- RLS Policies for habits table
 CREATE POLICY "Users can view their own habits"
   ON habits FOR SELECT
@@ -42,6 +48,11 @@ CREATE POLICY "Users can update their own habits"
 CREATE POLICY "Users can delete their own habits"
   ON habits FOR DELETE
   USING (auth.uid() = user_id);
+
+-- Drop existing policies if they exist (for habit_completions table)
+DROP POLICY IF EXISTS "Users can view their own habit completions" ON habit_completions;
+DROP POLICY IF EXISTS "Users can insert their own habit completions" ON habit_completions;
+DROP POLICY IF EXISTS "Users can delete their own habit completions" ON habit_completions;
 
 -- RLS Policies for habit_completions table
 CREATE POLICY "Users can view their own habit completions"
@@ -64,6 +75,9 @@ BEGIN
   RETURN NEW;
 END;
 $$ language 'plpgsql';
+
+-- Drop trigger if exists, then recreate
+DROP TRIGGER IF EXISTS update_habits_updated_at ON habits;
 
 -- Trigger to automatically update updated_at
 CREATE TRIGGER update_habits_updated_at BEFORE UPDATE ON habits
