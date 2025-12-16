@@ -24,12 +24,24 @@ export default function HabitsPage() {
   const loadHabits = async () => {
     try {
       setIsLoading(true);
-      const res = await fetch('/api/habits');
+      const res = await fetch('/api/habits', {
+        credentials: 'include',
+      });
       if (res.status === 401) {
+        console.warn('[Habits Page] Unauthorized - AuthGuard will handle redirect');
         // AuthGuard will handle redirect, just return early
         return;
       }
-      if (!res.ok) throw new Error('Failed to fetch habits');
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        const errorMessage = errorData.message || errorData.error || 'Failed to fetch habits';
+        console.error('Error loading habits:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorMessage,
+        });
+        throw new Error(errorMessage);
+      }
       const { habits: habitsData } = await res.json();
       setHabits(habitsData);
     } catch (error) {
@@ -44,10 +56,33 @@ export default function HabitsPage() {
       const res = await fetch('/api/habits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ name }),
       });
 
-      if (!res.ok) throw new Error('Failed to add habit');
+      if (!res.ok) {
+        // #region agent log
+        const responseText = await res.text().catch(() => '');
+        fetch('http://127.0.0.1:7244/ingest/e52713a9-07de-4743-ba22-4d27ab2cc1c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/habits/page.tsx:handleAdd',message:'API error response received',data:{status:res.status,statusText:res.statusText,responseText:responseText.substring(0,200),contentType:res.headers.get('content-type')},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'F'})}).catch(()=>{});
+        // #endregion
+        let errorData: { message?: string; error?: string } = {};
+        try {
+          errorData = JSON.parse(responseText);
+        } catch (e) {
+          // #region agent log
+          const parseError = e instanceof Error ? e.message : String(e);
+          fetch('http://127.0.0.1:7244/ingest/e52713a9-07de-4743-ba22-4d27ab2cc1c1',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'app/habits/page.tsx:handleAdd',message:'Failed to parse error response as JSON',data:{parseError,responseText:responseText.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'F'})}).catch(()=>{});
+          // #endregion
+        }
+        const errorMessage = errorData.message || errorData.error || 'Failed to add habit';
+        console.error('Error adding habit:', {
+          status: res.status,
+          statusText: res.statusText,
+          error: errorMessage,
+          errorData,
+        });
+        throw new Error(errorMessage);
+      }
       await loadHabits();
     } catch (error) {
       console.error('Error adding habit:', error);
@@ -63,6 +98,7 @@ export default function HabitsPage() {
     try {
       const res = await fetch(`/api/habits?id=${id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
 
       if (!res.ok) throw new Error('Failed to delete habit');
@@ -90,6 +126,7 @@ export default function HabitsPage() {
       const res = await fetch('/api/habits', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ id: editingId, name: editName }),
       });
 
