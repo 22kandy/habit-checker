@@ -25,6 +25,10 @@ export default function HabitsPage() {
     try {
       setIsLoading(true);
       const res = await fetch('/api/habits');
+      if (res.status === 401) {
+        // AuthGuard will handle redirect, just return early
+        return;
+      }
       if (!res.ok) throw new Error('Failed to fetch habits');
       const { habits: habitsData } = await res.json();
       setHabits(habitsData);

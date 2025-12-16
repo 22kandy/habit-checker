@@ -24,11 +24,19 @@ export default function DashboardPage() {
 
       // Fetch habits
       const habitsRes = await fetch('/api/habits');
+      if (habitsRes.status === 401) {
+        // AuthGuard will handle redirect, just return early
+        return;
+      }
       if (!habitsRes.ok) throw new Error('Failed to fetch habits');
       const { habits: habitsData } = await habitsRes.json();
 
       // Fetch today's completions
       const completionsRes = await fetch(`/api/completions?date=${today}`);
+      if (completionsRes.status === 401) {
+        // AuthGuard will handle redirect, just return early
+        return;
+      }
       if (!completionsRes.ok) throw new Error('Failed to fetch completions');
       const { completions } = await completionsRes.json();
 
@@ -38,6 +46,10 @@ export default function DashboardPage() {
 
       // Fetch all completions for streak calculation
       const allCompletionsRes = await fetch('/api/completions');
+      if (allCompletionsRes.status === 401) {
+        // AuthGuard will handle redirect, just return early
+        return;
+      }
       if (!allCompletionsRes.ok)
         throw new Error('Failed to fetch all completions');
       const { completions: allCompletions } = await allCompletionsRes.json();
